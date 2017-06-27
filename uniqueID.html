@@ -1,0 +1,35 @@
+<script type="text/javascript" src="/sites/XYZ/Style%20Library/js/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="/sites/XYZ/Style%20Library/js/sputility.min.js"></script>
+<script type="text/javascript">
+    var siteUrl;
+    var listName = 'TestList1';
+    $(document).ready(function () {
+        siteUrl = _spPageContextInfo.siteAbsoluteUrl;
+    });
+    function getListDataByCamlQuery(siteUrl, listName, camlViewField, camlQueryField) {
+        //var xmlData;
+        var itemCount = 0;
+        $().SPServices({
+            operation: "GetListItems",
+            async: false,
+            webURL: siteUrl,
+            listName: listName,
+            CAMLViewFields: camlViewField,
+            CAMLQuery: camlQueryField,
+            completefunc: function (xData, Status) {
+                itemCount = $(xData.responseXML).SPFilterNode("rs:data").attr("ItemCount");
+                //xmlData = $(xData.responseXML).SPFilterNode("z:row");
+            }
+        });
+        return itemCount;
+    }
+    function PreSaveAction() {
+        var varDevision = SPUtility.GetSPField('Devision').GetValue();
+        var camlQueryField = "<Query><Where><Eq><FieldRef Name='Devision'/><Value Type='Text'>" + varDevision + "</Value></Eq></Where></Query>";
+        var camlViewField = "<ViewFields><FieldRef Name='Title' /><FieldRef Name='Devision'/></ViewFields>";
+        var customData = getListDataByCamlQuery(siteUrl, listName, camlViewField, camlQueryField);
+        SPUtility.GetSPField("UniqueID").SetValue(parseInt(customData) + 1);
+        return true;
+    }
+
+</script>
