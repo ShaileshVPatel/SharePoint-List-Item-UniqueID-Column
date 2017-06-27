@@ -26,11 +26,10 @@
     }
     function PreSaveAction() {
         var varDevision = SPUtility.GetSPField('Devision').GetValue();
-        var varTitle = SPUtility.GetSPField('Title').GetValue();
         var camlQueryField = "<Query><Where><Eq><FieldRef Name='Devision'/><Value Type='Text'>" + varDevision + "</Value></Eq></Where></Query>";
         var camlViewField = "<ViewFields><FieldRef Name='Title' /><FieldRef Name='Devision'/></ViewFields>";
         var customData = getListDataByCamlQuery(siteUrl, listName, camlViewField, camlQueryField);
-        SPUtility.GetSPField("UniqueID").SetValue(varTitle + (parseInt(customData) + 1));
+        SPUtility.GetSPField("UniqueID").SetValue(varDevision + (parseInt(customData) + 1));
         return true;
     }
 
