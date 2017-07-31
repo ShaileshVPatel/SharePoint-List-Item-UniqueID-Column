@@ -1,15 +1,20 @@
-<script type="text/javascript" src="/sites/XYZ/Style%20Library/js/jquery-1.11.3.min.js"></script>
-<script type="text/javascript" src="/sites/XYZ/Style%20Library/js/jquery.SPServices-2014.02.min"></script>
-<script type="text/javascript" src="/sites/XYZ/Style%20Library/js/sputility.min.js"></script>
+<script type="text/javascript" src="../../Style%20Library/DevResource/UniqueID/js/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="../../Style%20Library/DevResource/UniqueID/js/jquery.SPServices-2014.02.min.js"></script>
+<script type="text/javascript" src="../../Style%20Library/DevResource/UniqueID/js/sputility.min.js"></script>
 <script type="text/javascript">
+    
     var siteUrl;
-    var listName = 'TestList1';
+    var listName;
+    
     $(document).ready(function () {
-        siteUrl = _spPageContextInfo.siteAbsoluteUrl;
+        siteUrl = _spPageContextInfo.webServerRelativeUrl;
+        listName = $().SPServices.SPListNameFromUrl();
+        SPUtility.GetSPField("UniqueIdentity").MakeReadOnly()
     });
+
+
     function getListDataByCamlQuery(siteUrl, listName, camlViewField, camlQueryField) {
-        //var xmlData;
-        var itemCount = 0;
+        var xmlData;
         $().SPServices({
             operation: "GetListItems",
             async: false,
@@ -17,19 +22,40 @@
             listName: listName,
             CAMLViewFields: camlViewField,
             CAMLQuery: camlQueryField,
+            CAMLRowLimit: 1,
             completefunc: function (xData, Status) {
-                itemCount = $(xData.responseXML).SPFilterNode("rs:data").attr("ItemCount");
-                //xmlData = $(xData.responseXML).SPFilterNode("z:row");
+                $(xData.responseXML).SPFilterNode("z:row").each(function () {
+                    xmlData = $(this).attr("ows_UniqueIdentity");
+                });
             }
         });
-        return itemCount;
+        return xmlData;
     }
+
     function PreSaveAction() {
-        var varDevision = SPUtility.GetSPField('Devision').GetValue();
-        var camlQueryField = "<Query><Where><Eq><FieldRef Name='Devision'/><Value Type='Text'>" + varDevision + "</Value></Eq></Where></Query>";
-        var camlViewField = "<ViewFields><FieldRef Name='Title' /><FieldRef Name='Devision'/></ViewFields>";
-        var customData = getListDataByCamlQuery(siteUrl, listName, camlViewField, camlQueryField);
-        SPUtility.GetSPField("UniqueID").SetValue(varDevision + (parseInt(customData) + 1));
+        var varDevision = SPUtility.GetSPField('Division').GetValue();
+        var varFiscalYear = SPUtility.GetSPField('Fiscal Year').GetValue();
+        var camlQueryField = "<Query><Where><Eq><FieldRef Name='Division' /><Value Type='Text'>" + varDevision + "</Value></Eq></Where><OrderBy><FieldRef Name='UniqueIdentity' Ascending='False' /></OrderBy></Query>";
+        var camlViewField = "<ViewFields><FieldRef Name='UniqueIdentity' /><FieldRef Name='Title' /><FieldRef Name='Division' /></ViewFields>";
+        var customLinkData = getListDataByCamlQuery(siteUrl, listName, camlViewField, camlQueryField);
+        var nextUniqueID = '0';
+        if (customLinkData) {
+            nextUniqueID = customLinkData.substring(5);
+        };
+
+        /* formate Identity Number with number of digit */
+        if (nextUniqueID < 10) {
+            nextUniqueID = '000' + (parseInt(nextUniqueID) + 1);
+        } else if (nextUniqueID < 100) {
+            nextUniqueID = '00' + (parseInt(nextUniqueID) + 1);
+        } else if (nextUniqueID < 1000) {
+            nextUniqueID = '0' + (parseInt(nextUniqueID) + 1);
+        } else {
+            nextUniqueID = (parseInt(nextUniqueID) + 1);
+        }
+
+        /* set UniqueIdentity field value */
+        SPUtility.GetSPField("UniqueIdentity").SetValue(varFiscalYear.substring(2) + varDevision + nextUniqueID);
         return true;
     }
 
